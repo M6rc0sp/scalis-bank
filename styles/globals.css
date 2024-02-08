@@ -2,28 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+:root.light {
   --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+  --background-start-rgb: 255, 255, 255;
+  --background-end-rgb: 72, 153, 190;
+  --header-background: rgb(72, 153, 190);
+  --button-background: rgb(32, 47, 93);
+  --account-card-background: rgb(200, 200, 200);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
+:root.dark {
+  --foreground-rgb: 255, 255, 255;
+  --background-start-rgb: 72, 153, 190;
+  --background-end-rgb: 0, 0, 0;
+  --header-background: rgb(32, 47, 93);
+  --button-background: rgb(72, 153, 190);
+  --account-card-background: rgb(200, 200, 200);
 }
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
+  background: linear-gradient(to bottom,
       transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+      rgb(var(--background-end-rgb))) rgb(var(--background-start-rgb));
+}
+
+.theme-toggle-button {
+  background-color: var(--button-background);
+}
+
+.card {
+  background-color: var(--background);
+  color: var(--foreground);
 }
 
 @layer utilities {
