@@ -1,18 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import Alert from '@mui/material/Alert';
-import Header from '../components/header';
-import AccountCard from '../components/account-card';
+import { Box, Card, CardContent, Grid, Typography } from '@mui/material';
+import Header from '@/components/header';
+import AccountCard from '@/components/account-card';
+import { AlertComponent, AlertState } from '@/components/alert-component';
+import { CurrencySelect } from '@/components/currency-select';
+import { TransferForm } from '@/components/transfer-form';
+import Head from 'next/head';
 
 export default function Home() {
-
-  type AlertType = 'error' | 'success' | 'warning' | 'info';
-
-  interface AlertState {
-    type: AlertType;
-    message: string;
-  }
-
-  const [alert, setAlert] = useState<AlertState>({ type: 'success', message: '' });
+  const [alert, setAlert] = useState<AlertState>({ type: null, message: '' });
   const [selectedCurrency, setSelectedCurrency] = useState<string>('USD');
   const [exchangeRate, setExchangeRate] = useState<number>(1);
   const [checkingBalance, setCheckingBalance] = useState<number>(0);
@@ -23,12 +19,18 @@ export default function Home() {
   const [transferDirection, setTransferDirection] = useState('toSavings');
 
   useEffect(() => {
+    updateData();
+  }, [checkingBalance, savingsBalance]);
+
+  useEffect(() => {
     if (selectedCurrency === 'BRL') {
       setExchangeRate(5);
     } else {
       setExchangeRate(1);
     }
+  }, [selectedCurrency]);
 
+  const updateData = () => {
     fetch('/api/balance?id=1')
       .then(response => response.json())
       .then(data => {
@@ -36,8 +38,7 @@ export default function Home() {
         setSavingsBalance(data.savings_balance);
       })
       .catch(error => console.error('Erro ao buscar os saldos:', error));
-
-  }, [selectedCurrency]);
+  }
 
   const displayBalance = (balance: number) => {
     if (selectedCurrency === 'BRL') {
@@ -58,6 +59,9 @@ export default function Home() {
   const handleTransfer = () => {
     if (amount === 0) {
       setAlert({ type: 'warning', message: 'Por favor, insira um valor antes de transferir.' });
+      return;
+    } else if (amount < 0) {
+      setAlert({ type: 'warning', message: 'Por favor, insira um valor positivo.' });
       return;
     }
     // Call API to perform transfer
@@ -89,55 +93,61 @@ export default function Home() {
       });
   }
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAlert({ type: null, message: '' });
+    }, 1000); // 1 segundo
+
+    return () => clearTimeout(timer);
+  }, [alert.message]);
+
   return (
-    <div className="flex flex-col items-center min-h-screen" style={{ background: 'var(--background)' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '100vh' }}>
+      <Head>
+        <title>XYZ Bank</title>
+      </Head>
       <Header />
-      <main className="w-full max-w-4xl p-4 mx-auto">
-        <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--foreground-rgb)' }}>User Accounts</h2>
-        <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <AccountCard
-            title="Checking Account"
-            balance={checkingBalance}
+      <Card sx={{ width: '100%', maxWidth: '960px', mx: 'auto', mt: '15px' }} elevation={0}>
+        <CardContent className='card'>
+          <Typography variant="h4" component="h2" gutterBottom>User Accounts</Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <AccountCard
+                title="Checking Account"
+                type="checking"
+                balance={checkingBalance}
+                selectedCurrency={selectedCurrency}
+                displayBalance={displayBalance}
+                setAlert={setAlert}
+                updateData={updateData}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <AccountCard
+                title="Savings Account"
+                type="savings"
+                balance={savingsBalance}
+                selectedCurrency={selectedCurrency}
+                displayBalance={displayBalance}
+                setAlert={setAlert}
+                updateData={updateData}
+              />
+            </Grid>
+          </Grid>
+          <CurrencySelect
             selectedCurrency={selectedCurrency}
-            displayBalance={displayBalance}
+            setSelectedCurrency={setSelectedCurrency}
           />
-          <AccountCard
-            title="Savings Account"
-            balance={savingsBalance}
-            selectedCurrency={selectedCurrency}
-            displayBalance={displayBalance}
+          <TransferForm
+            transferDirection={transferDirection}
+            setTransferDirection={setTransferDirection}
+            inputValue={inputValue}
+            handleAmountChange={handleAmountChange}
+            handleTransfer={handleTransfer}
           />
-        </section>
-        <section className="mt-4">
-          <select className="block appearance-none w-full bg-white border border-gray-200 text-gray-700 py-3 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500" onChange={(e) => setSelectedCurrency(e.target.value)}>
-            <option value="USD">Dollar (USD)</option>
-            <option value="BRL">Real (BRL)</option>
-          </select>
-        </section>
-        <section className="mt-4 flex items-center space-x-4">
-          <select
-            className="border-2 text-black border-gray-300 p-2 flex-grow"
-            value={transferDirection}
-            onChange={(e) => setTransferDirection(e.target.value)}
-          >
-            <option value="toSavings">Checking to Savings</option>
-            <option value="toChecking">Savings to Checking</option>
-          </select>
-          <input
-            className="border-2 text-black border-gray-300 p-2 flex-grow"
-            type="number"
-            value={inputValue}
-            onChange={handleAmountChange}
-          />
-          <button
-            className="bg-blue-500 text-white py-2 px-4 rounded flex-grow"
-            onClick={handleTransfer}
-          >
-            Transfer
-          </button>
-        </section>
-      </main>
-      {alert.message && <Alert severity={alert.type}>{alert.message}</Alert>}
-    </div>
+        </CardContent>
+      </Card>
+      <AlertComponent type={alert.type} message={alert.message} />
+    </Box>
   );
 };

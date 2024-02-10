@@ -1,43 +1,99 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+:root {
+  --pallet-light: 255, 255, 240;
+  --pallet-dark: 6, 36, 48;
+  --pallet-card-dark: 36, 76, 97;
+  --pallet-card-light: 202, 227, 231;
+
+  /* to complete gradient colors */
+  --color-3: 36, 162, 150;
+  --color-4: 96, 72, 120;
+}
 
 :root.light {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 255, 255, 255;
-  --background-end-rgb: 72, 153, 190;
-  --header-background: rgb(72, 153, 190);
-  --button-background: rgb(32, 47, 93);
-  --account-card-background: rgb(200, 200, 200);
+  --foreground-rgb: var(--pallet-dark);
+  --header-background: rgb(var(--pallet-light));
+  --button-background: rgb(var(--pallet-dark));
+  --account-card-background: rgb(var(--pallet-light));
+  --card-background: rgb(var(--pallet-card-light));
 }
 
 :root.dark {
-  --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 72, 153, 190;
-  --background-end-rgb: 0, 0, 0;
-  --header-background: rgb(32, 47, 93);
-  --button-background: rgb(72, 153, 190);
-  --account-card-background: rgb(200, 200, 200);
+  --foreground-rgb: var(--pallet-light);
+  --header-background: rgb(var(--pallet-dark));
+  --button-background: rgb(var(--pallet-light));
+  --account-card-background: rgb(var(--pallet-dark));
+  --card-background: rgb(var(--pallet-card-dark));
 }
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))) rgb(var(--background-start-rgb));
-}
-
-.theme-toggle-button {
-  background-color: var(--button-background);
+  background:
+    linear-gradient(to bottom right, var(--header-background), rgba(var(--color-4), 0), rgb(var(--color-3))),
+    linear-gradient(to top right, rgb(var(--color-4)), var(--card-background), var(--card-background)) rgba(var(--color-3), 1);
 }
 
 .card {
-  background-color: var(--background);
+  background-color: var(--card-background);
+}
+
+.button-color {
+  background-color: var(--button-background);
+  color: var(--header-background);
+}
+
+.transfer-button {
+  background-color: var(--button-background);
+  color: var(--header-background);
+}
+
+.MuiTypography-root {
   color: var(--foreground);
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+.MuiCard-root {
+  color: rgb(var(--foreground-rgb));
+}
+
+.MuiOutlinedInput-root {
+  color: rgb(var(--foreground-rgb));
+  border-color: rgb(var(--foreground-rgb));
+}
+
+.MuiOutlinedInput-notchedOutline {
+  border-color: rgb(var(--foreground-rgb));
+}
+
+.MuiInput-root {
+  color: rgb(var(--foreground-rgb));
+  border-color: rgb(var(--foreground-rgb));
+}
+
+.MuiInputLabel-root {
+  color: var(--foreground);
+}
+
+.MuiSelect-icon {
+  color: rgb(var(--foreground-rgb));
+}
+
+.MuiInput-underline:before {
+  border-bottom: 1px solid rgb(var(--foreground-rgb));
+}
+
+.MuiInput-underline:after {
+  border-bottom: 2px solid rgb(var(--foreground-rgb));
+}
+
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type='number'] {
+  -moz-appearance: textfield;
 }

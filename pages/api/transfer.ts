@@ -12,6 +12,11 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     if (req.method === 'POST') {
         const { accountId, from, to, amount }: TransferBody = req.body;
 
+        if (amount <= 0) {
+            res.status(400).json({ success: false, message: `O valor da transferência deve ser maior que zero` });
+            return;
+        }
+
         const accountMap = {
             checking: 'checking_balance',
             savings: 'savings_balance',
@@ -31,16 +36,20 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
                 return;
             }
 
-            const newFromBalance = row[fromBalanceKey] - amount;
-            const newToBalance = row[toBalanceKey] + amount;
+            const newFromBalance = +(row[fromBalanceKey] - amount).toFixed(2);
+            const newToBalance = +(row[toBalanceKey] + amount).toFixed(2);
 
-            db.run('UPDATE accounts SET checking_balance = ?, savings_balance = ? WHERE id = ?', [newFromBalance, newToBalance, accountId], (err: Error | null) => {
+            db.run(`UPDATE accounts SET ${fromBalanceKey} = ?, ${toBalanceKey} = ? WHERE id = ?`, [newFromBalance, newToBalance, accountId], (err: Error | null) => {
                 if (err) {
                     res.status(500).json({ error: err.message });
                     return;
                 }
 
-                res.json({ success: true, newCheckingBalance: newFromBalance, newSavingsBalance: newToBalance });
+                res.json({
+                    success: true,
+                    newCheckingBalance: from === 'checking' ? newFromBalance : newToBalance,
+                    newSavingsBalance: from === 'savings' ? newFromBalance : newToBalance
+                });
             });
         });
     } else {

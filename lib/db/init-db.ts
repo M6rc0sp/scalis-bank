@@ -12,4 +12,14 @@ database.serialize(() => {
       console.error('Error to create table', err);
     }
   });
+
+  database.run(`
+    INSERT INTO accounts (id, checking_balance, savings_balance)
+    SELECT 1, 0, 0
+    WHERE NOT EXISTS(SELECT 1 FROM accounts WHERE id = 1)
+  `, (err: Error | null) => {
+    if (err) {
+      console.error('Error to insert account', err);
+    }
+  });
 });

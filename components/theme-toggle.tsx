@@ -18,7 +18,7 @@ const ThemeToggle: React.FC = () => {
     };
 
     return (
-        <button onClick={toggleTheme} className="theme-toggle-button relative flex items-center justify-between w-16 rounded-full p-1 overflow-hidden">
+        <button onClick={toggleTheme} className="button-color relative flex items-center justify-between w-16 rounded-full p-1 overflow-hidden">
             <Brightness7Icon style={{ position: 'absolute', right: '5px', color: 'var(--header-background)' }} />
             <Brightness4Icon style={{ position: 'absolute', left: '5px', color: 'var(--header-background)' }} />
             <span className={`block w-6 h-6 rounded-full shadow-md transform transition-transform duration-300 ease-in-out ${theme === 'dark' ? 'translate-x-[calc(100%+8px)]' : ''}`} style={{ backgroundColor: 'var(--header-background)' }}></span>
