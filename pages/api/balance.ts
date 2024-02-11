@@ -18,6 +18,6 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
             res.json({ checking_balance: row ? row.checking_balance : 0, savings_balance: row ? row.savings_balance : 0 });
         });
     } else {
-        res.status(405).json({ error: 'Método não permitido' });
+        res.status(405).json({ error: 'Method not allowed' });
     }
 };

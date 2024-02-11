@@ -2,13 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Box, Card, CardContent, Grid, Typography } from '@mui/material';
 import Header from '@/components/header';
 import AccountCard from '@/components/account-card';
-import { AlertComponent, AlertState } from '@/components/alert-component';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { CurrencySelect } from '@/components/currency-select';
 import { TransferForm } from '@/components/transfer-form';
 import Head from 'next/head';
 
 export default function Home() {
-  const [alert, setAlert] = useState<AlertState>({ type: null, message: '' });
   const [selectedCurrency, setSelectedCurrency] = useState<string>('USD');
   const [exchangeRate, setExchangeRate] = useState<number>(1);
   const [checkingBalance, setCheckingBalance] = useState<number>(0);
@@ -37,14 +37,16 @@ export default function Home() {
         setCheckingBalance(data.checking_balance);
         setSavingsBalance(data.savings_balance);
       })
-      .catch(error => console.error('Erro ao buscar os saldos:', error));
+      .catch(error => {
+        toast.error('Error performing transfer.')
+      });
   }
 
   const displayBalance = (balance: number) => {
     if (selectedCurrency === 'BRL') {
       return (balance * exchangeRate).toFixed(2);
     }
-    return balance.toFixed(2);
+    return balance ? balance.toFixed(2) : '0.00';
   };
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -58,10 +60,10 @@ export default function Home() {
 
   const handleTransfer = () => {
     if (amount === 0) {
-      setAlert({ type: 'warning', message: 'Por favor, insira um valor antes de transferir.' });
+      toast.warn('Please enter a value before transferring.');
       return;
     } else if (amount < 0) {
-      setAlert({ type: 'warning', message: 'Por favor, insira um valor positivo.' });
+      toast.warn('Please enter a positive value.');
       return;
     }
     // Call API to perform transfer
@@ -80,26 +82,17 @@ export default function Home() {
       .then(response => response.json())
       .then(data => {
         if (data.success) {
-          setAlert({ type: 'success', message: 'Transferência realizada com sucesso!' });
+          toast.success('Transfer successful!');
           setCheckingBalance(data.newCheckingBalance);
           setSavingsBalance(data.newSavingsBalance);
         } else {
-          setAlert({ type: 'error', message: data.message });
+          toast.error(data.message);
         }
       })
       .catch(error => {
-        console.error('Erro ao realizar a transferência:', error);
-        setAlert({ type: 'error', message: 'Erro ao realizar a transferência.' });
+        toast.error('Error performing transfer.');
       });
   }
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setAlert({ type: null, message: '' });
-    }, 1000); // 1 segundo
-
-    return () => clearTimeout(timer);
-  }, [alert.message]);
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '100vh' }}>
@@ -118,7 +111,6 @@ export default function Home() {
                 balance={checkingBalance}
                 selectedCurrency={selectedCurrency}
                 displayBalance={displayBalance}
-                setAlert={setAlert}
                 updateData={updateData}
               />
             </Grid>
@@ -129,7 +121,6 @@ export default function Home() {
                 balance={savingsBalance}
                 selectedCurrency={selectedCurrency}
                 displayBalance={displayBalance}
-                setAlert={setAlert}
                 updateData={updateData}
               />
             </Grid>
@@ -147,7 +138,7 @@ export default function Home() {
           />
         </CardContent>
       </Card>
-      <AlertComponent type={alert.type} message={alert.message} />
+      <ToastContainer />
     </Box>
   );
 };

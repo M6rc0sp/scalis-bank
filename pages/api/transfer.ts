@@ -13,7 +13,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         const { accountId, from, to, amount }: TransferBody = req.body;
 
         if (amount <= 0) {
-            res.status(400).json({ success: false, message: `O valor da transferência deve ser maior que zero` });
+            res.status(400).json({ success: false, message: `The transfer amount must be greater than zero` });
             return;
         }
 
@@ -32,7 +32,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
             }
 
             if (!row || row[fromBalanceKey] < amount) {
-                res.status(400).json({ success: false, message: `Saldo insuficiente na conta ${from}` });
+                res.status(400).json({ success: false, message: `Insufficient balance in the ${from} account` });
                 return;
             }
 
@@ -53,6 +53,6 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
             });
         });
     } else {
-        res.status(405).json({ error: 'Método não permitido' });
+        res.status(405).json({ error: 'Method not allowed' });
     }
 };

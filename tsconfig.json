@@ -27,7 +27,8 @@
     "**/*.ts",
     "**/*.tsx",
     "lib/db/db.ts",
-    "lib/db/init-db.ts"
+    "lib/db/init-db.ts",
+    "setupTests.ts"
   ],
   "exclude": [
     "node_modules"

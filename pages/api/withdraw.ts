@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 const db = require('../../lib/db/db');
 
-interface DepositBody {
+interface WithdrawBody {
   accountId: number;
   accountType: 'checking' | 'savings';
   amount: number;
@@ -9,10 +9,10 @@ interface DepositBody {
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method === 'POST') {
-    const { accountId, accountType, amount }: DepositBody = req.body;
+    const { accountId, accountType, amount }: WithdrawBody = req.body;
 
     if (amount <= 0) {
-      res.status(400).json({ success: false, message: `O valor do saque deve ser maior que zero` });
+      res.status(400).json({ success: false, message: `The withdrawal amount must be greater than zero` });
       return;
     }
 
@@ -30,7 +30,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       }
 
       if (!row) {
-        res.status(400).json({ success: false, message: `Conta não encontrada` });
+        res.status(400).json({ success: false, message: `Account not found` });
         return;
       }
 
@@ -49,6 +49,6 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       });
     });
   } else {
-    res.status(405).json({ error: 'Método não permitido' });
+    res.status(405).json({ error: 'Method not allowed' });
   }
 };

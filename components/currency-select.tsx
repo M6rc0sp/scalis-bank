@@ -15,9 +15,16 @@ export const CurrencySelect: React.FC<CurrencySelectProps> = ({ selectedCurrency
           onChange={(e) => setSelectedCurrency(e.target.value)}
           labelId="currency-label"
           input={<OutlinedInput label="Currency" />}
+          data-testid="select-currency"
         >
-          <MenuItem value="USD">Dollar (USD)</MenuItem>
-          <MenuItem value="BRL">Real (BRL)</MenuItem>
+          <MenuItem
+            data-testid="currency-usd"
+            value="USD">Dollar (USD)
+          </MenuItem>
+          <MenuItem
+            data-testid="currency-brl"
+            value="BRL">Real (BRL)
+          </MenuItem>
         </Select>
       </FormControl>
     </Box>

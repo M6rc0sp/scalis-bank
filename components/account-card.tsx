@@ -1,8 +1,10 @@
-import { Box, Button, Grid, Input, Modal, Typography } from '@mui/material';
+import { Box, Button, Grid, IconButton, Input, Modal, Typography } from '@mui/material';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
-import React, { useState } from 'react';
-import { AlertState } from '@/components/alert-component';
+import CloseIcon from '@mui/icons-material/Close';
+import React, { useCallback, useState } from 'react';
+import { toast } from 'react-toastify';
+import TransactionModal from './transaction-modal';
 
 type AccountCardProps = {
 	title: string;
@@ -10,59 +12,56 @@ type AccountCardProps = {
 	balance: number;
 	selectedCurrency: string;
 	displayBalance: (balance: number) => string;
-	setAlert: (alert: AlertState) => void;
 	updateData: () => void;
 };
 
 const DEPOSIT = 'Deposit';
 const WITHDRAW = 'Withdraw';
 
-const AccountCard: React.FC<AccountCardProps> = ({ title, type, balance, selectedCurrency, displayBalance, setAlert, updateData }) => {
-	const [modalButtonName, setModalButtonName] = useState('');
-	const [withdrawOpen, setWithdrawOpen] = useState(false);
-	const [depositOpen, setDepositOpen] = useState(false);
+type TransactionType = 'Deposit' | 'Withdraw';
+
+const AccountCard: React.FC<AccountCardProps> = ({ title, type, balance, selectedCurrency, displayBalance, updateData }) => {
+	const [transactionType, setTransactionType] = useState<TransactionType | null>(null);
 	const [inputValue, setInputValue] = useState('');
 	const [amount, setAmount] = useState(0);
 
-	const handleDepositOpen = () => {
-		setModalButtonName(DEPOSIT);
-		setDepositOpen(true);
+	const handleOpenModal = (type: TransactionType) => {
+		setTransactionType(type);
 	};
 
-	const handleWithdrawOpen = () => {
-		setModalButtonName(WITHDRAW);
-		setWithdrawOpen(true);
+	const handleCloseModal = () => {
+		setTransactionType(null);
 	};
 
 	const handleDepositClose = () => {
-		setAmount(0);
 		setInputValue('');
-		setDepositOpen(false);
+		setAmount(0);
+		handleCloseModal();
 	};
 
 	const handleWithdrawClose = () => {
-		setAmount(0);
 		setInputValue('');
-		setWithdrawOpen(false);
+		setAmount(0);
+		handleCloseModal();
 	};
 
-	const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+	const handleAmountChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
 		const value = e.target.value;
 		setInputValue(value);
 		const numberValue = Number(value);
 		if (!isNaN(numberValue)) {
 			setAmount(numberValue);
 		}
-	};
+	}, []);
 
 	const handleDeposit = (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 		if (amount === 0) {
-			setAlert({ type: 'warning', message: 'Por favor, insira um valor antes de transferir.' });
+			toast.warn('Please enter a value before depositing.');
 			handleDepositClose();
 			return;
 		} else if (amount < 0) {
-			setAlert({ type: 'warning', message: 'Por favor, insira um valor positivo.' });
+			toast.warn('Please enter a positive value.');
 			handleDepositClose();
 			return;
 		}
@@ -81,16 +80,16 @@ const AccountCard: React.FC<AccountCardProps> = ({ title, type, balance, selecte
 			.then(response => response.json())
 			.then(data => {
 				if (data.success) {
-					setAlert({ type: 'success', message: 'Depósito realizada com sucesso!' });
+					toast.success('Deposit successful!');
 				} else {
-					setAlert({ type: 'error', message: data.message });
+					toast.error(data.message);
 				}
 				handleDepositClose();
 				updateData();
 			})
 			.catch(error => {
-				console.error('Erro ao realizar a transferência:', error);
-				setAlert({ type: 'error', message: 'Erro ao realizar a transferência.' });
+				console.error('Error depositing:', error);
+				toast.error('Error depositing.');
 				handleDepositClose();
 			});
 	};
@@ -98,11 +97,11 @@ const AccountCard: React.FC<AccountCardProps> = ({ title, type, balance, selecte
 	const handleWithdraw = (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 		if (amount === 0) {
-			setAlert({ type: 'warning', message: 'Por favor, insira um valor antes de sacar.' });
+			toast.warn('Please enter a value before withdrawing.');
 			handleWithdrawClose();
 			return;
 		} else if (amount < 0) {
-			setAlert({ type: 'warning', message: 'Por favor, insira um valor positivo.' });
+			toast.warn('Please enter a positive value.');
 			handleWithdrawClose();
 			return;
 		}
@@ -121,85 +120,71 @@ const AccountCard: React.FC<AccountCardProps> = ({ title, type, balance, selecte
 			.then(response => response.json())
 			.then(data => {
 				if (data.success) {
-					setAlert({ type: 'success', message: 'Saque realizado com sucesso!' });
+					toast.success('Withdrawal successful!');
 				} else {
-					setAlert({ type: 'error', message: data.message });
+					toast.error(data.message);
 				}
 				handleWithdrawClose();
 				updateData();
 			})
 			.catch(error => {
-				console.error('Erro ao realizar o saque:', error);
-				setAlert({ type: 'error', message: 'Erro ao realizar o saque.' });
+				console.error('Error withdrawing:', error);
+				toast.error('Error withdrawing.');
 				handleWithdrawClose();
 			});
 	};
 
-	const modalBody = (
-		<Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', bgcolor: 'var(--account-card-background)', boxShadow: 24, p: 4 }}>
-			<form onSubmit={modalButtonName === DEPOSIT ? handleDeposit : handleWithdraw}>
-				<Typography variant="h5" component="h3" gutterBottom>
-					{title}
-				</Typography>
-				<Input
-					type="number"
-					value={inputValue}
-					onChange={handleAmountChange}
-					sx={{ flexGrow: 1, height: '40px' }}
-				/>
-				<Button className='button-color' type="submit" variant="contained" color="primary">
-					{modalButtonName}
-				</Button>
-			</form>
-		</Box>
-	);
+	const handleTransactionSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+		if (transactionType === 'Deposit') {
+			handleDeposit(event);
+		} else if (transactionType === 'Withdraw') {
+			handleWithdraw(event);
+		}
+	};
 
 	return (
 		<Box sx={{ p: 4, boxShadow: 3, borderRadius: 1, display: 'flex', flexDirection: 'column', bgcolor: 'var(--account-card-background)' }}>
-			<Typography variant="h5" component="h3" gutterBottom>
+			<Typography variant="h5" component="h3" gutterBottom data-testid="account-title">
 				{title}
 			</Typography>
-			<Typography>
+			<Typography data-testid="account-balance">
 				Balance: {selectedCurrency === 'USD' ? '$' : 'R$'} {displayBalance(balance)}
 			</Typography>
 			<Grid container spacing={2}>
 				<Grid item>
-					<Button className='transfer-button'
-						variant="contained"
-						color="primary"
-						startIcon={<ArrowUpwardIcon />}
-						onClick={handleDepositOpen}
-					>
+					<Button className='transfer-button' variant="contained" color="success" data-testid="deposit-button" startIcon={<ArrowUpwardIcon />} onClick={() => handleOpenModal('Deposit')}>
 						{DEPOSIT}
 					</Button>
 				</Grid>
 				<Grid item>
-					<Button className='transfer-button'
-						variant="contained"
-						color="secondary"
-						startIcon={<ArrowDownwardIcon />}
-						onClick={handleWithdrawOpen}
-					>
+					<Button className='transfer-button' variant="contained" color="error" data-testid="withdraw-button" startIcon={<ArrowDownwardIcon />} onClick={() => handleOpenModal('Withdraw')}>
 						{WITHDRAW}
 					</Button>
 				</Grid>
 			</Grid>
-			<Modal
-				open={depositOpen}
-				onClose={handleDepositClose}
-				aria-labelledby="simple-modal-title"
-				aria-describedby="simple-modal-description"
-			>
-				{modalBody}
-			</Modal>
-			<Modal
-				open={withdrawOpen}
-				onClose={handleWithdrawClose}
-				aria-labelledby="withdraw-modal-title"
-				aria-describedby="withdraw-modal-description"
-			>
-				{modalBody}
-			</Modal>
+			<Grid item>
+				<TransactionModal
+					title={title}
+					transactionType="Deposit"
+					inputValue={inputValue}
+					handleAmountChange={handleAmountChange}
+					handleSubmit={handleTransactionSubmit}
+					handleClose={handleCloseModal}
+					open={transactionType === 'Deposit'}
+				/>
+			</Grid>
+			<Grid item>
+				<TransactionModal
+					title={title}
+					transactionType="Withdraw"
+					inputValue={inputValue}
+					handleAmountChange={handleAmountChange}
+					handleSubmit={handleTransactionSubmit}
+					handleClose={handleCloseModal}
+					open={transactionType === 'Withdraw'}
+				/>
+			</Grid>
 		</Box>
 	);
 };

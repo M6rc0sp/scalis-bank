@@ -14,7 +14,8 @@ export const TransferForm: React.FC<TransferFormProps> = ({ transferDirection, s
       <Select
         value={transferDirection}
         onChange={(e) => setTransferDirection(e.target.value)}
-        sx={{ flexGrow: 1, height: '40px' }}
+        sx={{ height: '40px' }}
+        inputProps={{ 'data-testid': "select-transfer-direction" }}
       >
         <MenuItem value="toSavings">Checking to Savings</MenuItem>
         <MenuItem value="toChecking">Savings to Checking</MenuItem>
@@ -23,6 +24,7 @@ export const TransferForm: React.FC<TransferFormProps> = ({ transferDirection, s
         type="number"
         value={inputValue}
         onChange={handleAmountChange}
+        placeholder='Insert the amount in USD'
         sx={{ flexGrow: 1, height: '40px' }}
       />
       <Button className='transfer-button'
