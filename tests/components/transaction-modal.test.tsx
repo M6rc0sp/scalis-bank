@@ -5,15 +5,16 @@ describe('TransactionModal', () => {
   const mockHandleAmountChange = jest.fn();
   const mockHandleSubmit = jest.fn();
   const mockHandleClose = jest.fn();
+  const transactionType = 'Deposit';
 
   beforeEach(() => {
     render(
       <TransactionModal
         title="Deposit"
-        transactionType="Deposit"
+        transactionType={transactionType}
         inputValue="100"
         handleAmountChange={mockHandleAmountChange}
-        handleSubmit={mockHandleSubmit}
+        handleTransactionSubmit={mockHandleSubmit}
         handleClose={mockHandleClose}
         open={true}
       />
@@ -22,21 +23,22 @@ describe('TransactionModal', () => {
 
   test('renders with correct initial values', () => {
     expect(screen.getByTestId('transaction-modal-deposit')).toBeInTheDocument();
-    expect(screen.getByTestId('input-deposit-withdraw')).toHaveValue('100');
+    expect(screen.getByTestId('input-deposit')).toHaveValue(100);
   });
 
   test('calls handleAmountChange when input value changes', () => {
-    fireEvent.change(screen.getByTestId('input-deposit-withdraw'), { target: { value: '200' } });
+    fireEvent.change(screen.getByTestId('input-deposit'), { target: { value: '200' } });
     expect(mockHandleAmountChange).toHaveBeenCalled();
   });
 
-  test('calls handleSubmit when form is submitted', () => {
-    fireEvent.submit(screen.getByTestId('transaction-modal-deposit'));
+  test('calls handleSubmit when form is submitted', async () => {
+    expect(screen.getByTestId(`transaction-modal-${transactionType.toLowerCase()}`)).toBeInTheDocument();
+    fireEvent.submit(screen.getByTestId('transaction-submit'));
     expect(mockHandleSubmit).toHaveBeenCalled();
   });
 
   test('calls handleClose when close button is clicked', () => {
-    fireEvent.click(screen.getByTestId('close-button'));
+    fireEvent.click(screen.getByTestId('close-modal-deposit'));
     expect(mockHandleClose).toHaveBeenCalled();
   });
 });

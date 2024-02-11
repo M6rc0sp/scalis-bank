@@ -1,10 +1,9 @@
-import { Box, Button, Grid, IconButton, Input, Modal, Typography } from '@mui/material';
+import { Box, Button, Grid, Typography } from '@mui/material';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
-import CloseIcon from '@mui/icons-material/Close';
 import React, { useCallback, useState } from 'react';
-import { toast } from 'react-toastify';
 import TransactionModal from './transaction-modal';
+import { toast } from 'react-toastify';
 
 type AccountCardProps = {
 	title: string;
@@ -33,13 +32,7 @@ const AccountCard: React.FC<AccountCardProps> = ({ title, type, balance, selecte
 		setTransactionType(null);
 	};
 
-	const handleDepositClose = () => {
-		setInputValue('');
-		setAmount(0);
-		handleCloseModal();
-	};
-
-	const handleWithdrawClose = () => {
+	const handleClose = (transactionType: TransactionType | null) => {
 		setInputValue('');
 		setAmount(0);
 		handleCloseModal();
@@ -54,93 +47,53 @@ const AccountCard: React.FC<AccountCardProps> = ({ title, type, balance, selecte
 		}
 	}, []);
 
-	const handleDeposit = (event: React.FormEvent<HTMLFormElement>) => {
-		event.preventDefault();
-		if (amount === 0) {
-			toast.warn('Please enter a value before depositing.');
-			handleDepositClose();
-			return;
-		} else if (amount < 0) {
-			toast.warn('Please enter a positive value.');
-			handleDepositClose();
-			return;
-		}
-
-		fetch('/api/deposit', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify({
-				accountId: 1,
-				accountType: type,
-				amount: amount,
-			}),
-		})
-			.then(response => response.json())
-			.then(data => {
-				if (data.success) {
-					toast.success('Deposit successful!');
-				} else {
-					toast.error(data.message);
-				}
-				handleDepositClose();
-				updateData();
-			})
-			.catch(error => {
-				console.error('Error depositing:', error);
-				toast.error('Error depositing.');
-				handleDepositClose();
-			});
-	};
-
-	const handleWithdraw = (event: React.FormEvent<HTMLFormElement>) => {
-		event.preventDefault();
-		if (amount === 0) {
-			toast.warn('Please enter a value before withdrawing.');
-			handleWithdrawClose();
-			return;
-		} else if (amount < 0) {
-			toast.warn('Please enter a positive value.');
-			handleWithdrawClose();
-			return;
-		}
-
-		fetch('/api/withdraw', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify({
-				accountId: 1,
-				accountType: type,
-				amount: amount,
-			}),
-		})
-			.then(response => response.json())
-			.then(data => {
-				if (data.success) {
-					toast.success('Withdrawal successful!');
-				} else {
-					toast.error(data.message);
-				}
-				handleWithdrawClose();
-				updateData();
-			})
-			.catch(error => {
-				console.error('Error withdrawing:', error);
-				toast.error('Error withdrawing.');
-				handleWithdrawClose();
-			});
-	};
-
 	const handleTransactionSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-		event.preventDefault();
-		if (transactionType === 'Deposit') {
-			handleDeposit(event);
-		} else if (transactionType === 'Withdraw') {
-			handleWithdraw(event);
+		if (transactionType) {
+			handleTransaction(event, transactionType);
 		}
+	};
+
+	const handleTransaction = (event: React.FormEvent<HTMLFormElement>, transactionType: TransactionType) => {
+		event.preventDefault();
+		if (amount === 0) {
+			toast.warn(`Please enter a value before ${transactionType.toLowerCase()}ing.`);
+			handleClose(transactionType);
+			return;
+		} else if (amount < 0) {
+			toast.warn('Please enter a positive value.');
+			handleClose(transactionType);
+			return;
+		}
+
+		const apiEndpoint = transactionType === 'Deposit' ? '/api/deposit' : '/api/withdraw';
+		const successMessage = `${transactionType} successful!`;
+
+		fetch(apiEndpoint, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				accountId: 1,
+				accountType: type,
+				amount: amount,
+			}),
+		})
+			.then(response => response.json())
+			.then(data => {
+				if (data.success) {
+					toast.success(successMessage);
+				} else {
+					toast.error(data.message);
+				}
+				handleClose(transactionType);
+				updateData();
+			})
+			.catch(error => {
+				console.error(`Error ${transactionType.toLowerCase()}ing:`, error);
+				toast.error(`Error ${transactionType.toLowerCase()}ing.`);
+				handleClose(transactionType);
+			});
 	};
 
 	return (
@@ -148,17 +101,33 @@ const AccountCard: React.FC<AccountCardProps> = ({ title, type, balance, selecte
 			<Typography variant="h5" component="h3" gutterBottom data-testid="account-title">
 				{title}
 			</Typography>
-			<Typography data-testid="account-balance">
+			<Typography data-testid={`${type}-account-balance`}>
 				Balance: {selectedCurrency === 'USD' ? '$' : 'R$'} {displayBalance(balance)}
 			</Typography>
 			<Grid container spacing={2}>
 				<Grid item>
-					<Button className='transfer-button' variant="contained" color="success" data-testid="deposit-button" startIcon={<ArrowUpwardIcon />} onClick={() => handleOpenModal('Deposit')}>
+					<Button
+						className="transfer-button"
+						variant="contained"
+						color="success"
+						data-testid="deposit-button"
+						startIcon={<ArrowUpwardIcon />}
+						onClick={() => handleOpenModal("Deposit")}
+						sx={{ flexGrow: 1, height: '40px', width: { xs: '100%', sm: 'auto' } }}
+					>
 						{DEPOSIT}
 					</Button>
 				</Grid>
 				<Grid item>
-					<Button className='transfer-button' variant="contained" color="error" data-testid="withdraw-button" startIcon={<ArrowDownwardIcon />} onClick={() => handleOpenModal('Withdraw')}>
+					<Button
+						className="transfer-button"
+						variant="contained"
+						color="error"
+						data-testid="withdraw-button"
+						startIcon={<ArrowDownwardIcon />}
+						onClick={() => handleOpenModal("Withdraw")}
+						sx={{ flexGrow: 1, height: '40px', width: { xs: '100%', sm: 'auto' } }}
+					>
 						{WITHDRAW}
 					</Button>
 				</Grid>
@@ -169,8 +138,8 @@ const AccountCard: React.FC<AccountCardProps> = ({ title, type, balance, selecte
 					transactionType="Deposit"
 					inputValue={inputValue}
 					handleAmountChange={handleAmountChange}
-					handleSubmit={handleTransactionSubmit}
-					handleClose={handleCloseModal}
+					handleTransactionSubmit={handleTransactionSubmit}
+					handleClose={() => handleClose('Deposit')}
 					open={transactionType === 'Deposit'}
 				/>
 			</Grid>
@@ -180,8 +149,8 @@ const AccountCard: React.FC<AccountCardProps> = ({ title, type, balance, selecte
 					transactionType="Withdraw"
 					inputValue={inputValue}
 					handleAmountChange={handleAmountChange}
-					handleSubmit={handleTransactionSubmit}
-					handleClose={handleCloseModal}
+					handleTransactionSubmit={handleTransactionSubmit}
+					handleClose={() => handleClose('Withdraw')}
 					open={transactionType === 'Withdraw'}
 				/>
 			</Grid>

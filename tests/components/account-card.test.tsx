@@ -1,11 +1,24 @@
 import '@testing-library/jest-dom';
 import { render, fireEvent, screen, waitFor, act } from '@testing-library/react';
+import { ToastContainer } from 'react-toastify';
 import fetchMock from 'jest-fetch-mock';
 import AccountCard from '@/components/account-card';
+import React from 'react';
+
+const renderWithToastify = (component: React.ReactNode) => {
+  return (
+    render(
+      <div>
+        <ToastContainer />
+        {component}
+      </div>
+    )
+  );
+};
 
 describe('AccountCard', () => {
   const mockUpdateData = jest.fn();
-  const mockHandleDepositClose = jest.fn();
+  let transactionType = '';
 
   beforeAll(() => {
     fetchMock.enableMocks();
@@ -16,7 +29,8 @@ describe('AccountCard', () => {
   });
 
   beforeEach(() => {
-    render(
+    transactionType = 'Deposit';
+    renderWithToastify(
       <AccountCard
         title="Checking"
         type="checking"
@@ -30,96 +44,30 @@ describe('AccountCard', () => {
 
   test('renders with correct initial values', async () => {
     expect(screen.getByTestId('account-title')).toHaveTextContent('Checking');
-    const balance = await screen.findByTestId('account-balance');
+    const balance = await screen.findByTestId('checking-account-balance');
     expect(balance).toHaveTextContent(/balance: \$\s*100\.00/i);
     expect(screen.getByTestId('deposit-button')).toBeInTheDocument();
     expect(screen.getByTestId('withdraw-button')).toBeInTheDocument();
   });
 
-  test('opens deposit modal when deposit button is clicked', async () => {
-    fireEvent.click(screen.getByTestId('deposit-button'));
-    await waitFor(() => expect(screen.getByTestId('transaction-modal-deposit')).toBeInTheDocument());
-  });
-
-  test('opens withdraw modal when withdraw button is clicked', async () => {
-    fireEvent.click(screen.getByTestId('withdraw-button'));
-    await waitFor(() => expect(screen.getByTestId('transaction-modal-withdraw')).toBeInTheDocument());
-  });
-
   test('handleAmountChange updates inputValue and amount correctly', () => {
     fireEvent.click(screen.queryAllByTestId('deposit-button')[0]);
-    const oninput = screen.getByTestId('input-deposit-withdraw') as HTMLInputElement;
+    const oninput = screen.getByTestId(`input-${transactionType.toLowerCase()}`) as HTMLInputElement;
     fireEvent.change(oninput, { target: { value: '200' } });
     expect(oninput?.value).toBe('200');
   });
 
-  test('closes deposit modal when close button is clicked', async () => {
-    fireEvent.click(screen.getByTestId('deposit-button'));
-    await waitFor(() => expect(screen.getByTestId('transaction-modal-deposit')).toBeInTheDocument());
-    fireEvent.click(screen.getByTestId('close-button'));
-    await waitFor(() => expect(screen.queryByTestId('transaction-modal-deposit')).not.toBeInTheDocument());
-  });
-
-  test('closes withdraw modal when close button is clicked', async () => {
-    fireEvent.click(screen.getByTestId('withdraw-button'));
-    await waitFor(() => expect(screen.getByTestId('transaction-modal-withdraw')).toBeInTheDocument());
-    fireEvent.click(screen.getByTestId('close-button'));
-    await waitFor(() => expect(screen.queryByTestId('transaction-modal-withdraw')).not.toBeInTheDocument());
-  });
-
-  test('handleWithdrawClose resets state correctly', async () => {
-    // Abra o modal de retirada e defina um valor de entrada
-    fireEvent.click(screen.getByTestId('withdraw-button'));
-    const input = screen.getByTestId('input-deposit-withdraw') as HTMLInputElement;
-    fireEvent.change(input, { target: { value: '200' } });
-
-    // Feche o modal de retirada
-    act(() => {
-      fireEvent.click(screen.getByTestId('close-button'));
-    });
-
-    // Verifique se o estado foi redefinido corretamente
-    await waitFor(() => {
-      // Espera que o valor do input seja ''
-      expect(input.value).toBe('200'); //eroor
-    });
-  });
-
-  test('handleDepositClose resets state correctly', async () => {
-    // Abra o modal de depósito e defina um valor de entrada
-    fireEvent.click(screen.getByTestId('deposit-button'));
-    const input = screen.getByTestId('input-deposit-withdraw') as HTMLInputElement;
-    fireEvent.change(input, { target: { value: '200' } });
-
-    // Feche o modal de depósito
-    act(() => {
-      fireEvent.click(screen.getByTestId('close-button'));
-    });
-
-    // Verifique se o estado foi redefinido corretamente
-    await waitFor(() => {
-      // Espera que o valor do input seja ''
-      expect(input.value).toBe('200'); //error
-    });
-  });
-
   test('handleDeposit makes a POST request to /api/deposit when form is submitted', async () => {
-    fetchMock.mockResponseOnce(JSON.stringify({ success: true }));
-
-    // Abra o modal de depósito
+    fetchMock.mockResponseOnce(JSON.stringify({ success: true, newBalance: 500 }));
     fireEvent.click(screen.getByTestId('deposit-button'));
-
-    // Agora você deve ser capaz de encontrar o elemento de entrada
-    const input = await screen.findByTestId('input-deposit-withdraw') as HTMLInputElement;
+    expect(screen.getByTestId(`transaction-modal-${transactionType.toLowerCase()}`)).toBeInTheDocument();
+    const input = await screen.findByTestId(`input-${transactionType.toLowerCase()}`) as HTMLInputElement;
     fireEvent.change(input, { target: { value: '200' } });
-
-    // Submeta o formulário e aguarde a resolução da promessa
     await act(async () => {
-      fireEvent.submit(screen.getByTestId('transaction-modal-deposit'));
+      const button = screen.getByRole('button', { name: /deposit/i });
+      fireEvent.click(button);
     });
-
-    // Aguarde um pouco antes de verificar a chamada para fetch
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/deposit', {
+    expect(fetchMock).toHaveBeenCalledWith('/api/deposit', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -129,9 +77,144 @@ describe('AccountCard', () => {
         accountType: 'checking',
         amount: 200,
       }),
-    }));
-
+    });
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     expect(mockUpdateData).toHaveBeenCalled();
-    expect(mockHandleDepositClose).toHaveBeenCalled();
+  });
+
+  test('handleWithdraw makes a POST request to /api/withdraw when form is submitted', async () => {
+    fetchMock.mockResponseOnce(JSON.stringify({ success: true, newBalance: 500 }));
+    transactionType = 'Withdraw';
+    fireEvent.click(screen.getByTestId('withdraw-button'));
+    expect(screen.getByTestId(`transaction-modal-${transactionType.toLowerCase()}`)).toBeInTheDocument();
+    const input = await screen.findByTestId(`input-${transactionType.toLowerCase()}`) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '50' } });
+    await act(async () => {
+      const button = screen.getByRole('button', { name: /withdraw/i });
+      fireEvent.click(button);
+    });
+    expect(fetchMock).toHaveBeenCalledWith('/api/withdraw', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        accountId: 1,
+        accountType: 'checking',
+        amount: 50,
+      }),
+    });
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(mockUpdateData).toHaveBeenCalled();
+  });
+
+  test('displays a warning when the withdraw amount is 0', async () => {
+    transactionType = 'Withdraw';
+    fireEvent.click(screen.getByTestId('withdraw-button'));
+    expect(screen.getByTestId(`transaction-modal-${transactionType.toLowerCase()}`)).toBeInTheDocument();
+    const input = await screen.findByTestId(`input-${transactionType.toLowerCase()}`) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '0' } });
+    await act(async () => {
+      const button = screen.getByRole('button', { name: /withdraw/i });
+      fireEvent.click(button);
+    });
+    expect(await screen.findByText('Please enter a value before withdrawing.')).toBeInTheDocument();
+  });
+
+  test('displays a warning when the withdraw amount is negative', async () => {
+    transactionType = 'Withdraw';
+    fireEvent.click(screen.getByTestId('withdraw-button'));
+    expect(screen.getByTestId(`transaction-modal-${transactionType.toLowerCase()}`)).toBeInTheDocument();
+    const input = await screen.findByTestId(`input-${transactionType.toLowerCase()}`) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '-200' } });
+    await act(async () => {
+      const button = screen.getByRole('button', { name: /withdraw/i });
+      fireEvent.click(button);
+    });
+    expect(await screen.findByText('Please enter a positive value.')).toBeInTheDocument();
+  });
+
+  test('displays a warning when the deposit amount is 0', async () => {
+    fireEvent.click(screen.getByTestId('deposit-button'));
+    expect(screen.getByTestId('transaction-modal-deposit')).toBeInTheDocument();
+    const input = await screen.findByTestId('input-deposit') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '0' } });
+    await act(async () => {
+      const button = screen.getByRole('button', { name: /deposit/i });
+      fireEvent.click(button);
+    });
+    expect(await screen.findByText('Please enter a value before depositing.')).toBeInTheDocument();
+  });
+
+  test('displays a warning when the deposit amount is negative', async () => {
+    fireEvent.click(screen.getByTestId('deposit-button'));
+    expect(screen.getByTestId('transaction-modal-deposit')).toBeInTheDocument();
+    const input = await screen.findByTestId('input-deposit') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '-200' } });
+    await act(async () => {
+      const button = screen.getByRole('button', { name: /deposit/i });
+      fireEvent.click(button);
+    });
+    expect(await screen.findByText('Please enter a positive value.')).toBeInTheDocument();
+  });
+
+  ['Deposit', 'Withdraw'].forEach((type) => {
+    test(`opens ${type.toLowerCase()} modal when ${type.toLowerCase()} button is clicked`, async () => {
+      transactionType = type;
+      fireEvent.click(screen.getByTestId(`${type.toLowerCase()}-button`));
+      await waitFor(() => expect(screen.getByTestId(`transaction-modal-${type.toLowerCase()}`)).toBeInTheDocument());
+    });
+
+    test(`closes ${type.toLowerCase()} modal when close button is clicked`, async () => {
+      transactionType = type;
+      fireEvent.click(screen.getByTestId(`${type.toLowerCase()}-button`));
+      await waitFor(() => expect(screen.getByTestId(`transaction-modal-${type.toLowerCase()}`)).toBeInTheDocument());
+      fireEvent.click(screen.getByTestId(`close-modal-${type.toLowerCase()}`));
+      await waitFor(() => expect(screen.queryByTestId(`transaction-modal-${type.toLowerCase()}`)).not.toBeInTheDocument());
+    });
+
+    test(`displays an error when the API call fails`, async () => {
+      fetchMock.mockRejectOnce(new Error('API error'));
+      jest.spyOn(console, 'error').mockImplementation(() => { });
+      fireEvent.click(screen.getByTestId(`${type.toLowerCase()}-button`));
+      expect(screen.getByTestId(`transaction-modal-${type.toLowerCase()}`)).toBeInTheDocument();
+      const input = await screen.findByTestId(`input-${type.toLowerCase()}`) as HTMLInputElement;
+      fireEvent.change(input, { target: { value: '200' } });
+      await act(async () => {
+        const button = screen.getByRole('button', { name: new RegExp(type, 'i') });
+        fireEvent.click(button);
+      });
+      jest.spyOn(console, 'error').mockRestore();
+      expect(await screen.findByText(`Error ${type.toLowerCase()}ing.`)).toBeInTheDocument();
+    });
+  });
+
+  test('displays an error toast when the API call fails', async () => {
+    fetchMock.mockRejectOnce(new Error('Network error'));
+    jest.spyOn(console, 'error').mockImplementation(() => { });
+    fireEvent.click(screen.getByTestId('deposit-button'));
+    const input = await screen.findByTestId('input-deposit') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '200' } });
+    await act(async () => {
+      const button = screen.getByRole('button', { name: /deposit/i });
+      fireEvent.click(button);
+    });
+    jest.spyOn(console, 'error').mockRestore();
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+  });
+
+  test('displayBalance is called with the correct value', () => {
+    const mockDisplayBalance = jest.fn();
+    renderWithToastify(
+      <AccountCard
+        title="Checking"
+        type="checking"
+        balance={100}
+        selectedCurrency="USD"
+        displayBalance={mockDisplayBalance}
+        updateData={mockUpdateData}
+      />
+    );
+    expect(mockDisplayBalance).toHaveBeenCalledWith(100);
   });
 });

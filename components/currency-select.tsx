@@ -14,6 +14,7 @@ export const CurrencySelect: React.FC<CurrencySelectProps> = ({ selectedCurrency
           value={selectedCurrency}
           onChange={(e) => setSelectedCurrency(e.target.value)}
           labelId="currency-label"
+          sx={{ flexGrow: 1, height: '40px', width: { xs: '100%', sm: 'auto' } }}
           input={<OutlinedInput label="Currency" />}
           data-testid="select-currency"
         >

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 
@@ -6,13 +6,22 @@ const ThemeToggle: React.FC = () => {
     const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
     useEffect(() => {
-        if (typeof window !== 'undefined') {
-            document.documentElement.className = theme;
+        const savedTheme = localStorage.getItem('theme') as 'light' | 'dark';
+        if (savedTheme) {
+            setTheme(savedTheme);
+            document.documentElement.className = savedTheme;
+        } else {
+            localStorage.setItem('theme', 'light');
+            document.documentElement.className = 'light';
         }
-    }, [theme]);
+    }, []);
 
     const toggleTheme = () => {
-        setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
+        const newTheme = theme === 'light' ? 'dark' : 'light';
+        setTheme(newTheme);
+
+        localStorage.setItem('theme', newTheme);
+        document.documentElement.className = newTheme;
     };
 
     return (

@@ -20,7 +20,7 @@ export default function Home() {
 
   useEffect(() => {
     updateData();
-  }, [checkingBalance, savingsBalance]);
+  }, []);
 
   useEffect(() => {
     if (selectedCurrency === 'BRL') {
@@ -83,8 +83,7 @@ export default function Home() {
       .then(data => {
         if (data.success) {
           toast.success('Transfer successful!');
-          setCheckingBalance(data.newCheckingBalance);
-          setSavingsBalance(data.newSavingsBalance);
+          updateData();
         } else {
           toast.error(data.message);
         }
