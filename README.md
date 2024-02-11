@@ -87,7 +87,3 @@ This will run the tests and create a coverage report in the `coverage` directory
 ## Contact
 
 You can reach me at [paulo.marcos0108@live.com](mailto:paulo.marcos0108@live.com)
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
